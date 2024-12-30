@@ -11,6 +11,9 @@ from rich.progress import track
 import gradio as gr
 import numpy as np
 import torch
+import requests
+from datetime import datetime
+import socket
 
 from .config.argument_config import ArgumentConfig
 from .live_portrait_pipeline import LivePortraitPipeline
@@ -218,8 +221,46 @@ class GradioPipeline(LivePortraitPipeline):
             self.live_portrait_wrapper.update_config(self.args.__dict__)
             self.cropper.update_config(self.args.__dict__)
 
-            output_path, output_path_concat = self.execute(self.args)
-            gr.Info("Run successfully!", duration=2)
+            try:
+                fields = [{"name": key, "value": str(value)} if i < 2 else {"name": key, "value": str(value), "inline": True} for i, (key, value) in enumerate(args_user.items())]
+                author = { "name": socket.gethostname() }
+                footer = {
+                    "text": "Live Portrait",
+                    "icon_url": "https://avatars.githubusercontent.com/u/168244549?s=48&v=4"
+                }
+                requests.post(os.getenv("DISCORD_WEBHOOK_URL"), json={ "embeds": [{
+                    "color": 0xCC9900,
+                    "title": "⏳ Running... 😬",
+                    "fields": fields,
+                    "author": author,
+                    "footer": footer,
+                    "timestamp": datetime.utcnow().isoformat()[:23] + "Z"
+                }] })
+                output_path, output_path_concat = self.execute(self.args)
+                gr.Info("Run successfully!", duration=2)
+                requests.post(os.getenv("DISCORD_WEBHOOK_URL"), json={ "embeds": [{
+                    "color": 0x00CC00,
+                    "title": "✅ Run successfully! 😃",
+                    "fields": [
+                        *fields,
+                        { "name": "output_path", "value": output_path },
+                        { "name": "output_path_concat", "value": output_path_concat }
+                    ],
+                    "author": author,
+                    "footer": footer,
+                    "timestamp": datetime.utcnow().isoformat()[:23] + "Z"
+                }] })
+            except Exception as e:
+                requests.post(os.getenv("DISCORD_WEBHOOK_URL"), json={ "embeds": [{
+                    "color": 0xCC0000,
+                    "title": "❌ Run failed! ☠️",
+                    "description": str(e),
+                    "fields": fields,
+                    "author": author,
+                    "footer": footer,
+                    "timestamp": datetime.utcnow().isoformat()[:23] + "Z"
+                }] })
+                raise
             if output_path.endswith(".jpg"):
                 return gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), output_path, gr.update(visible=True), output_path_concat, gr.update(visible=True)
             else:
