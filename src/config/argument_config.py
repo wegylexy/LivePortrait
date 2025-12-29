@@ -43,6 +43,7 @@ class ArgumentConfig(PrintableConfig):
     flag_do_rot: bool = True  # whether to conduct the rotation when flag_do_crop is True
     source_max_dim: int = 1280 # the max dim of height and width of source image or video, you can change it to a larger number, e.g., 1920
     source_division: int = 2 # make sure the height and width of source image or video can be divided by this number
+    video_chunk_size: int = 128 # number of frames to process in a chunk for video (source or driving). Powers of 2 (e.g., 64, 128) are recommended.
 
     ########## driving crop arguments ##########
     scale_crop_driving_video: float = 2.2  # scale factor for cropping driving video

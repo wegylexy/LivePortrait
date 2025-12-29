@@ -12,6 +12,8 @@ import numpy as np
 import os
 import os.path as osp
 import ffmpegcv
+import threading
+from queue import Queue
 from rich.progress import track
 
 from .config.argument_config import ArgumentConfig
@@ -33,21 +35,34 @@ def make_abs_path(fn):
     return osp.join(osp.dirname(osp.realpath(__file__)), fn)
 
 def read_video_chunks(video_path, chunk_size=128, max_dim=1280, division=2):
-    cap = cv2.VideoCapture(video_path)
-    frames = []
+    def read_loop(q, path, c_size, m_dim, div):
+        cap = cv2.VideoCapture(path)
+        frames = []
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = resize_to_limit(frame, m_dim, div)
+            frames.append(frame)
+            if len(frames) >= c_size:
+                q.put(frames)
+                frames = []
+        if frames:
+            q.put(frames)
+        q.put(None)
+        cap.release()
+
+    q = Queue(maxsize=3)
+    t = threading.Thread(target=read_loop, args=(q, video_path, chunk_size, max_dim, division))
+    t.daemon = True
+    t.start()
+
     while True:
-        ret, frame = cap.read()
-        if not ret:
+        chunk = q.get()
+        if chunk is None:
             break
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = resize_to_limit(frame, max_dim, division)
-        frames.append(frame)
-        if len(frames) >= chunk_size:
-            yield frames
-            frames = []
-    if frames:
-        yield frames
-    cap.release()
+        yield chunk
 
 class LivePortraitPipeline(object):
 
@@ -155,7 +170,7 @@ class LivePortraitPipeline(object):
                 driving_template_dct = { 'n_frames': 0, 'output_fps': output_fps, 'motion': [], 'c_eyes_lst': [], 'c_lip_lst': [] }
 
                 prev_lmk = None
-                for chunk_idx, driving_chunk in enumerate(read_video_chunks(args.driving, max_dim=1280, division=2)):
+                for chunk_idx, driving_chunk in enumerate(read_video_chunks(args.driving, chunk_size=args.video_chunk_size, max_dim=1280, division=2)):
                     if inf_cfg.flag_crop_driving_video or (not is_square_video(args.driving)):
                         ret_d = self.cropper.crop_driving_video_chunk(driving_chunk, crop_cfg, prev_lmk=prev_lmk)
                         prev_lmk = ret_d['last_lmk']
@@ -237,7 +252,7 @@ class LivePortraitPipeline(object):
             source_M_c2o_lst_all = [] # Store M_c2o for Pass 2
 
             prev_lmk = None
-            for chunk_idx, source_chunk in enumerate(read_video_chunks(args.source, max_dim=inf_cfg.source_max_dim, division=inf_cfg.source_division)):
+            for chunk_idx, source_chunk in enumerate(read_video_chunks(args.source, chunk_size=args.video_chunk_size, max_dim=inf_cfg.source_max_dim, division=inf_cfg.source_division)):
                 if inf_cfg.flag_do_crop:
                     ret_s = self.cropper.crop_source_video_chunk(source_chunk, crop_cfg, prev_lmk=prev_lmk)
                     prev_lmk = ret_s['last_lmk']
@@ -262,23 +277,24 @@ class LivePortraitPipeline(object):
                 source_template_dct['c_lip_lst'].extend(chunk_motion_dct['c_lip_lst'])
                 log(f"Processed source pass 1 chunk {chunk_idx}")
 
-            n_frames = min(len(source_template_dct['motion']), driving_n_frames) if flag_is_driving_video else len(source_template_dct['motion'])
+            source_n_frames = len(source_template_dct['motion'])
+            n_frames = driving_n_frames if flag_is_driving_video else source_n_frames
             c_s_eyes_lst = source_template_dct['c_eyes_lst'] # For eye retargeting
 
             key_r = 'R' if 'R' in driving_template_dct['motion'][0].keys() else 'R_d'  # compatible with previous keys
             if inf_cfg.flag_relative_motion:
                 if flag_is_driving_video:
-                    x_d_exp_lst = [source_template_dct['motion'][i]['exp'] + driving_template_dct['motion'][i]['exp'] - driving_template_dct['motion'][0]['exp'] for i in range(n_frames)]
+                    x_d_exp_lst = [source_template_dct['motion'][i % source_n_frames]['exp'] + driving_template_dct['motion'][i]['exp'] - driving_template_dct['motion'][0]['exp'] for i in range(n_frames)]
                     x_d_exp_lst_smooth = smooth(x_d_exp_lst, source_template_dct['motion'][0]['exp'].shape, device, inf_cfg.driving_smooth_observation_variance)
                 else:
-                    x_d_exp_lst = [source_template_dct['motion'][i]['exp'] + (driving_template_dct['motion'][0]['exp'] - inf_cfg.lip_array) for i in range(n_frames)]
+                    x_d_exp_lst = [source_template_dct['motion'][i % source_n_frames]['exp'] + (driving_template_dct['motion'][0]['exp'] - inf_cfg.lip_array) for i in range(n_frames)]
                     x_d_exp_lst_smooth = [torch.tensor(x_d_exp[0], dtype=torch.float32, device=device) for x_d_exp in x_d_exp_lst]
                 if inf_cfg.animation_region == "all" or inf_cfg.animation_region == "pose":
                     if flag_is_driving_video:
-                        x_d_r_lst = [(np.dot(driving_template_dct['motion'][i][key_r], driving_template_dct['motion'][0][key_r].transpose(0, 2, 1))) @ source_template_dct['motion'][i]['R'] for i in range(n_frames)]
+                        x_d_r_lst = [(np.dot(driving_template_dct['motion'][i][key_r], driving_template_dct['motion'][0][key_r].transpose(0, 2, 1))) @ source_template_dct['motion'][i % source_n_frames]['R'] for i in range(n_frames)]
                         x_d_r_lst_smooth = smooth(x_d_r_lst, source_template_dct['motion'][0]['R'].shape, device, inf_cfg.driving_smooth_observation_variance)
                     else:
-                        x_d_r_lst = [source_template_dct['motion'][i]['R'] for i in range(n_frames)]
+                        x_d_r_lst = [source_template_dct['motion'][i % source_n_frames]['R'] for i in range(n_frames)]
                         x_d_r_lst_smooth = [torch.tensor(x_d_r[0], dtype=torch.float32, device=device) for x_d_r in x_d_r_lst]
             else:
                 if flag_is_driving_video:
@@ -334,9 +350,6 @@ class LivePortraitPipeline(object):
         else:
             log(f"The output of image-driven portrait animation is an image.")
 
-        # Prepare generator for source frames if video
-        source_frame_gen = read_video_chunks(args.source, max_dim=inf_cfg.source_max_dim, division=inf_cfg.source_division) if flag_is_source_video else None
-
         # Loop for animation
         global_i = 0
 
@@ -345,9 +358,10 @@ class LivePortraitPipeline(object):
 
         def frame_generator():
             if flag_is_source_video:
-                for chunk in source_frame_gen:
-                    for frame in chunk:
-                        yield frame
+                while True:
+                    for chunk in read_video_chunks(args.source, chunk_size=args.video_chunk_size, max_dim=inf_cfg.source_max_dim, division=inf_cfg.source_division):
+                        for frame in chunk:
+                            yield frame
             else:
                 for _ in range(n_frames):
                     yield source_rgb_lst[0]
@@ -357,12 +371,13 @@ class LivePortraitPipeline(object):
             i = frame_idx
 
             if flag_is_source_video:  # source video
-                x_s_info = source_template_dct['motion'][i]
+                source_idx = i % source_n_frames
+                x_s_info = source_template_dct['motion'][source_idx]
                 x_s_info = dct2device(x_s_info, device)
 
                 # We need to crop again using saved landmarks
                 # We have source_lmk_lst_all from Pass 1
-                lmk = source_lmk_lst_all[i]
+                lmk = source_lmk_lst_all[source_idx]
 
                 # Crop
                 from .utils.crop import crop_image
