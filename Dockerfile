@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.3.1-cuda11.8-cudnn8-devel AS base
+FROM pytorch/pytorch:2.9.1-cuda12.8-cudnn9-runtime AS base
 # Install ffmpeg
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \

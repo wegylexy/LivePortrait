@@ -11,6 +11,7 @@ import cv2; cv2.setNumThreads(0); cv2.ocl.setUseOpenCL(False)
 import numpy as np
 import os
 import os.path as osp
+import ffmpegcv
 from rich.progress import track
 
 from .config.argument_config import ArgumentConfig
@@ -31,6 +32,22 @@ from .live_portrait_wrapper import LivePortraitWrapper
 def make_abs_path(fn):
     return osp.join(osp.dirname(osp.realpath(__file__)), fn)
 
+def read_video_chunks(video_path, chunk_size=128, max_dim=1280, division=2):
+    cap = cv2.VideoCapture(video_path)
+    frames = []
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = resize_to_limit(frame, max_dim, division)
+        frames.append(frame)
+        if len(frames) >= chunk_size:
+            yield frames
+            frames = []
+    if frames:
+        yield frames
+    cap.release()
 
 class LivePortraitPipeline(object):
 
@@ -48,7 +65,8 @@ class LivePortraitPipeline(object):
             'c_lip_lst': [],
         }
 
-        for i in track(range(n_frames), description='Making motion templates...', total=n_frames):
+        # Disable track if called in chunks to avoid multiple progress bars, or handle externally
+        for i in range(n_frames):
             # collect s, R, δ and t for inference
             I_i = I_lst[i]
             x_i_info = self.live_portrait_wrapper.get_kp_info(I_i)
@@ -82,7 +100,7 @@ class LivePortraitPipeline(object):
 
         ######## load source input ########
         flag_is_source_video = False
-        source_fps = None
+        source_fps = 25
         if is_image(args.source):
             flag_is_source_video = False
             img_rgb = load_image_rgb(args.source)
@@ -91,10 +109,10 @@ class LivePortraitPipeline(object):
             source_rgb_lst = [img_rgb]
         elif is_video(args.source):
             flag_is_source_video = True
-            source_rgb_lst = load_video(args.source)
-            source_rgb_lst = [resize_to_limit(img, inf_cfg.source_max_dim, inf_cfg.source_division) for img in source_rgb_lst]
             source_fps = int(get_fps(args.source))
             log(f"Load source video from {args.source}, FPS is {source_fps}")
+            # Don't load all frames here to avoid OOM
+            source_rgb_lst = []
         else:  # source input is an unknown format
             raise Exception(f"Unknown source format: {args.source}")
 
@@ -112,9 +130,10 @@ class LivePortraitPipeline(object):
             driving_n_frames = driving_template_dct['n_frames']
             flag_is_driving_video = True if driving_n_frames > 1 else False
             if flag_is_source_video and flag_is_driving_video:
-                n_frames = min(len(source_rgb_lst), driving_n_frames)  # minimum number as the number of the animated frames
+                # We don't know source length yet if we don't load it, but we can estimate or handle it in loop
+                n_frames = driving_n_frames # Placeholder, will be adjusted
             elif flag_is_source_video and not flag_is_driving_video:
-                n_frames = len(source_rgb_lst)
+                n_frames = 999999 # Placeholder
             else:
                 n_frames = driving_n_frames
 
@@ -131,47 +150,68 @@ class LivePortraitPipeline(object):
                 # load from video file, AND make motion template
                 output_fps = int(get_fps(args.driving))
                 log(f"Load driving video from: {args.driving}, FPS is {output_fps}")
-                driving_rgb_lst = load_video(args.driving)
+
+                log("Start making driving motion template...")
+                driving_template_dct = { 'n_frames': 0, 'output_fps': output_fps, 'motion': [], 'c_eyes_lst': [], 'c_lip_lst': [] }
+
+                prev_lmk = None
+                for chunk_idx, driving_chunk in enumerate(read_video_chunks(args.driving, max_dim=1280, division=2)):
+                    if inf_cfg.flag_crop_driving_video or (not is_square_video(args.driving)):
+                        ret_d = self.cropper.crop_driving_video_chunk(driving_chunk, crop_cfg, prev_lmk=prev_lmk)
+                        prev_lmk = ret_d['last_lmk']
+                        driving_rgb_crop_lst = ret_d['frame_crop_lst']
+                        driving_lmk_crop_lst = ret_d['lmk_crop_lst']
+                        driving_rgb_crop_256x256_lst = [cv2.resize(_, (256, 256)) for _ in driving_rgb_crop_lst]
+                    else:
+                        # If not cropping, we still need landmarks for ratio calculation
+                        # We can use crop_driving_video_chunk but ignore the crop result if we want,
+                        # or just resize. But we need landmarks.
+                        # For simplicity, let's assume we crop or at least detect landmarks.
+                        # If is_square_video and not flag_crop, we usually just resize.
+                        # But we need landmarks for `calc_ratio`.
+                        # So we use the cropper to get landmarks.
+                        ret_d = self.cropper.crop_driving_video_chunk(driving_chunk, crop_cfg, prev_lmk=prev_lmk)
+                        prev_lmk = ret_d['last_lmk']
+                        driving_lmk_crop_lst = ret_d['lmk_crop_lst']
+                        driving_rgb_crop_256x256_lst = [cv2.resize(_, (256, 256)) for _ in driving_chunk]
+
+                    c_d_eyes_lst_chunk, c_d_lip_lst_chunk = self.live_portrait_wrapper.calc_ratio(driving_lmk_crop_lst)
+                    I_d_lst = self.live_portrait_wrapper.prepare_videos(driving_rgb_crop_256x256_lst)
+                    chunk_motion_dct = self.make_motion_template(I_d_lst, c_d_eyes_lst_chunk, c_d_lip_lst_chunk, output_fps=output_fps)
+
+                    driving_template_dct['motion'].extend(chunk_motion_dct['motion'])
+                    driving_template_dct['c_eyes_lst'].extend(chunk_motion_dct['c_eyes_lst'])
+                    driving_template_dct['c_lip_lst'].extend(chunk_motion_dct['c_lip_lst'])
+                    driving_template_dct['n_frames'] += len(driving_chunk)
+                    log(f"Processed driving chunk {chunk_idx}, total frames: {driving_template_dct['n_frames']}")
+
+                wfp_template = remove_suffix(args.driving) + '.pkl'
+                dump(wfp_template, driving_template_dct)
+                log(f"Dump motion template to {wfp_template}")
+
+                driving_n_frames = driving_template_dct['n_frames']
+                n_frames = driving_n_frames # Update n_frames
+
             elif is_image(args.driving):
                 flag_is_driving_video = False
                 driving_img_rgb = load_image_rgb(args.driving)
                 output_fps = 25
                 log(f"Load driving image from {args.driving}")
                 driving_rgb_lst = [driving_img_rgb]
+
+                # Process single image driving
+                driving_lmk_crop_lst = self.cropper.calc_lmks_from_cropped_video(driving_rgb_lst)
+                driving_rgb_crop_256x256_lst = [cv2.resize(_, (256, 256)) for _ in driving_rgb_lst]
+                c_d_eyes_lst, c_d_lip_lst = self.live_portrait_wrapper.calc_ratio(driving_lmk_crop_lst)
+                I_d_lst = self.live_portrait_wrapper.prepare_videos(driving_rgb_crop_256x256_lst)
+                driving_template_dct = self.make_motion_template(I_d_lst, c_d_eyes_lst, c_d_lip_lst, output_fps=output_fps)
+                n_frames = 1
             else:
                 raise Exception(f"{args.driving} is not a supported type!")
-            ######## make motion template ########
-            log("Start making driving motion template...")
-            driving_n_frames = len(driving_rgb_lst)
-            if flag_is_source_video and flag_is_driving_video:
-                n_frames = min(len(source_rgb_lst), driving_n_frames)  # minimum number as the number of the animated frames
-                driving_rgb_lst = driving_rgb_lst[:n_frames]
-            elif flag_is_source_video and not flag_is_driving_video:
-                n_frames = len(source_rgb_lst)
-            else:
-                n_frames = driving_n_frames
-            if inf_cfg.flag_crop_driving_video or (not is_square_video(args.driving)):
-                ret_d = self.cropper.crop_driving_video(driving_rgb_lst)
-                log(f'Driving video is cropped, {len(ret_d["frame_crop_lst"])} frames are processed.')
-                if len(ret_d["frame_crop_lst"]) is not n_frames and flag_is_driving_video:
-                    n_frames = min(n_frames, len(ret_d["frame_crop_lst"]))
-                driving_rgb_crop_lst, driving_lmk_crop_lst = ret_d['frame_crop_lst'], ret_d['lmk_crop_lst']
-                driving_rgb_crop_256x256_lst = [cv2.resize(_, (256, 256)) for _ in driving_rgb_crop_lst]
-            else:
-                driving_lmk_crop_lst = self.cropper.calc_lmks_from_cropped_video(driving_rgb_lst)
-                driving_rgb_crop_256x256_lst = [cv2.resize(_, (256, 256)) for _ in driving_rgb_lst]  # force to resize to 256x256
-            #######################################
 
-            c_d_eyes_lst, c_d_lip_lst = self.live_portrait_wrapper.calc_ratio(driving_lmk_crop_lst)
-            # save the motion template
-            I_d_lst = self.live_portrait_wrapper.prepare_videos(driving_rgb_crop_256x256_lst)
-            driving_template_dct = self.make_motion_template(I_d_lst, c_d_eyes_lst, c_d_lip_lst, output_fps=output_fps)
-
-            wfp_template = remove_suffix(args.driving) + '.pkl'
-            dump(wfp_template, driving_template_dct)
-            log(f"Dump motion template to {wfp_template}")
         else:
             raise Exception(f"{args.driving} does not exist!")
+
         if not flag_is_driving_video:
             c_d_eyes_lst = c_d_eyes_lst*n_frames
             c_d_lip_lst = c_d_lip_lst*n_frames
@@ -190,23 +230,40 @@ class LivePortraitPipeline(object):
 
         ######## process source info ########
         if flag_is_source_video:
-            log(f"Start making source motion template...")
+            log(f"Start processing source video (Pass 1: Motion Template)...")
+            # Pass 1: Calculate source motion template (needed for relative motion and smoothing)
+            source_template_dct = {'motion': [], 'c_eyes_lst': [], 'c_lip_lst': []}
+            source_lmk_lst_all = [] # Store original landmarks for Pass 2
+            source_M_c2o_lst_all = [] # Store M_c2o for Pass 2
 
-            source_rgb_lst = source_rgb_lst[:n_frames]
-            if inf_cfg.flag_do_crop:
-                ret_s = self.cropper.crop_source_video(source_rgb_lst, crop_cfg)
-                log(f'Source video is cropped, {len(ret_s["frame_crop_lst"])} frames are processed.')
-                if len(ret_s["frame_crop_lst"]) is not n_frames:
-                    n_frames = min(n_frames, len(ret_s["frame_crop_lst"]))
-                img_crop_256x256_lst, source_lmk_crop_lst, source_M_c2o_lst = ret_s['frame_crop_lst'], ret_s['lmk_crop_lst'], ret_s['M_c2o_lst']
-            else:
-                source_lmk_crop_lst = self.cropper.calc_lmks_from_cropped_video(source_rgb_lst)
-                img_crop_256x256_lst = [cv2.resize(_, (256, 256)) for _ in source_rgb_lst]  # force to resize to 256x256
+            prev_lmk = None
+            for chunk_idx, source_chunk in enumerate(read_video_chunks(args.source, max_dim=inf_cfg.source_max_dim, division=inf_cfg.source_division)):
+                if inf_cfg.flag_do_crop:
+                    ret_s = self.cropper.crop_source_video_chunk(source_chunk, crop_cfg, prev_lmk=prev_lmk)
+                    prev_lmk = ret_s['last_lmk']
+                    img_crop_256x256_lst = ret_s['frame_crop_lst']
+                    source_lmk_crop_lst = ret_s['lmk_crop_lst']
+                    source_M_c2o_lst = ret_s['M_c2o_lst']
+                    source_lmk_lst_all.extend(ret_s['lmk_lst'])
+                    source_M_c2o_lst_all.extend(ret_s['M_c2o_lst'])
+                else:
+                    # Fallback if no crop (not recommended for OOM fix but kept for logic)
+                    source_lmk_crop_lst = self.cropper.calc_lmks_from_cropped_video(source_chunk)
+                    img_crop_256x256_lst = [cv2.resize(_, (256, 256)) for _ in source_chunk]
+                    source_M_c2o_lst = [None] * len(source_chunk)
+                    source_M_c2o_lst_all.extend(source_M_c2o_lst)
 
-            c_s_eyes_lst, c_s_lip_lst = self.live_portrait_wrapper.calc_ratio(source_lmk_crop_lst)
-            # save the motion template
-            I_s_lst = self.live_portrait_wrapper.prepare_videos(img_crop_256x256_lst)
-            source_template_dct = self.make_motion_template(I_s_lst, c_s_eyes_lst, c_s_lip_lst, output_fps=source_fps)
+                c_s_eyes_lst, c_s_lip_lst = self.live_portrait_wrapper.calc_ratio(source_lmk_crop_lst)
+                I_s_lst = self.live_portrait_wrapper.prepare_videos(img_crop_256x256_lst)
+                chunk_motion_dct = self.make_motion_template(I_lst=I_s_lst, c_eyes_lst=c_s_eyes_lst, c_lip_lst=c_s_lip_lst, output_fps=source_fps)
+
+                source_template_dct['motion'].extend(chunk_motion_dct['motion'])
+                source_template_dct['c_eyes_lst'].extend(chunk_motion_dct['c_eyes_lst'])
+                source_template_dct['c_lip_lst'].extend(chunk_motion_dct['c_lip_lst'])
+                log(f"Processed source pass 1 chunk {chunk_idx}")
+
+            n_frames = min(len(source_template_dct['motion']), driving_n_frames) if flag_is_driving_video else len(source_template_dct['motion'])
+            c_s_eyes_lst = source_template_dct['c_eyes_lst'] # For eye retargeting
 
             key_r = 'R' if 'R' in driving_template_dct['motion'][0].keys() else 'R_d'  # compatible with previous keys
             if inf_cfg.flag_relative_motion:
@@ -265,19 +322,55 @@ class LivePortraitPipeline(object):
             if inf_cfg.flag_pasteback and inf_cfg.flag_do_crop and inf_cfg.flag_stitching:
                 mask_ori_float = prepare_paste_back(inf_cfg.mask_crop, crop_info['M_c2o'], dsize=(source_rgb_lst[0].shape[1], source_rgb_lst[0].shape[0]))
 
+        mkdir(args.output_dir)
+        wfp = osp.join(args.output_dir, f'{basename(args.source)}--{basename(args.driving)}.mp4')
+        wfp_concat = None
+
         ######## animate ########
         if flag_is_driving_video or (flag_is_source_video and not flag_is_driving_video):
             log(f"The animated video consists of {n_frames} frames.")
+            # Setup VideoWriterNV
+            writer = ffmpegcv.VideoWriterNV(wfp, codec='h264', fps=output_fps)
         else:
             log(f"The output of image-driven portrait animation is an image.")
-        for i in track(range(n_frames), description='🚀Animating...', total=n_frames):
+
+        # Prepare generator for source frames if video
+        source_frame_gen = read_video_chunks(args.source, max_dim=inf_cfg.source_max_dim, division=inf_cfg.source_division) if flag_is_source_video else None
+
+        # Loop for animation
+        global_i = 0
+
+        # If source is video, we iterate chunks again (Pass 2)
+        # If source is image, we iterate range(n_frames)
+
+        def frame_generator():
+            if flag_is_source_video:
+                for chunk in source_frame_gen:
+                    for frame in chunk:
+                        yield frame
+            else:
+                for _ in range(n_frames):
+                    yield source_rgb_lst[0]
+
+        for frame_idx, frame_rgb in enumerate(track(frame_generator(), description='🚀Animating...', total=n_frames)):
+            if frame_idx >= n_frames: break
+            i = frame_idx
+
             if flag_is_source_video:  # source video
                 x_s_info = source_template_dct['motion'][i]
                 x_s_info = dct2device(x_s_info, device)
 
-                source_lmk = source_lmk_crop_lst[i]
-                img_crop_256x256 = img_crop_256x256_lst[i]
-                I_s = I_s_lst[i]
+                # We need to crop again using saved landmarks
+                # We have source_lmk_lst_all from Pass 1
+                lmk = source_lmk_lst_all[i]
+
+                # Crop
+                from .utils.crop import crop_image
+                ret_dct = crop_image(frame_rgb, lmk, dsize=crop_cfg.dsize, scale=crop_cfg.scale, vx_ratio=crop_cfg.vx_ratio, vy_ratio=crop_cfg.vy_ratio, flag_do_rot=crop_cfg.flag_do_rot)
+                img_crop_256x256 = cv2.resize(ret_dct["img_crop"], (256, 256), interpolation=cv2.INTER_AREA)
+
+                source_lmk = ret_dct['pt_crop']
+                I_s = self.live_portrait_wrapper.prepare_source(img_crop_256x256)
                 f_s = self.live_portrait_wrapper.extract_feature_3d(I_s)
 
                 x_c_s = x_s_info['kp']
@@ -304,7 +397,7 @@ class LivePortraitPipeline(object):
                     eye_delta_before_animation = self.live_portrait_wrapper.retarget_eye(x_s, combined_eye_ratio_tensor_before_animation)
 
                 if inf_cfg.flag_pasteback and inf_cfg.flag_do_crop and inf_cfg.flag_stitching:  # prepare for paste back
-                    mask_ori_float = prepare_paste_back(inf_cfg.mask_crop, source_M_c2o_lst[i], dsize=(source_rgb_lst[i].shape[1], source_rgb_lst[i].shape[0]))
+                    mask_ori_float = prepare_paste_back(inf_cfg.mask_crop, ret_dct['M_c2o'], dsize=(frame_rgb.shape[1], frame_rgb.shape[0]))
             if flag_is_source_video and not flag_is_driving_video:
                 x_d_i_info = driving_template_dct['motion'][0]
             else:
@@ -444,50 +537,25 @@ class LivePortraitPipeline(object):
             if inf_cfg.flag_pasteback and inf_cfg.flag_do_crop and inf_cfg.flag_stitching:
                 # TODO: the paste back procedure is slow, considering optimize it using multi-threading or GPU
                 if flag_is_source_video:
-                    I_p_pstbk = paste_back(I_p_i, source_M_c2o_lst[i], source_rgb_lst[i], mask_ori_float)
+                    I_p_pstbk = paste_back(I_p_i, ret_dct['M_c2o'], frame_rgb, mask_ori_float)
                 else:
                     I_p_pstbk = paste_back(I_p_i, crop_info['M_c2o'], source_rgb_lst[0], mask_ori_float)
-                I_p_pstbk_lst.append(I_p_pstbk)
 
-        mkdir(args.output_dir)
-        wfp_concat = None
-        ######### build the final concatenation result #########
-        # driving frame | source frame | generation
-        if flag_is_source_video and flag_is_driving_video:
-            frames_concatenated = concat_frames(driving_rgb_crop_256x256_lst, img_crop_256x256_lst, I_p_lst)
-        elif flag_is_source_video and not flag_is_driving_video:
-            if flag_load_from_template:
-                frames_concatenated = concat_frames(driving_rgb_crop_256x256_lst, img_crop_256x256_lst, I_p_lst)
+                if flag_is_driving_video or flag_is_source_video:
+                    writer.write(cv2.cvtColor(I_p_pstbk, cv2.COLOR_RGB2BGR))
+                else:
+                    I_p_pstbk_lst = [I_p_pstbk] # For image output
             else:
-                frames_concatenated = concat_frames(driving_rgb_crop_256x256_lst*n_frames, img_crop_256x256_lst, I_p_lst)
-        else:
-            frames_concatenated = concat_frames(driving_rgb_crop_256x256_lst, [img_crop_256x256], I_p_lst)
+                if flag_is_driving_video or flag_is_source_video:
+                    writer.write(cv2.cvtColor(I_p_i, cv2.COLOR_RGB2BGR))
 
         if flag_is_driving_video or (flag_is_source_video and not flag_is_driving_video):
+            writer.release()
             flag_source_has_audio = flag_is_source_video and has_audio_stream(args.source)
             flag_driving_has_audio = (not flag_load_from_template) and has_audio_stream(args.driving)
 
-            wfp_concat = osp.join(args.output_dir, f'{basename(args.source)}--{basename(args.driving)}_concat.mp4')
-
             # NOTE: update output fps
             output_fps = source_fps if flag_is_source_video else output_fps
-            images2video(frames_concatenated, wfp=wfp_concat, fps=output_fps)
-
-            if flag_source_has_audio or flag_driving_has_audio:
-                # final result with concatenation
-                wfp_concat_with_audio = osp.join(args.output_dir, f'{basename(args.source)}--{basename(args.driving)}_concat_with_audio.mp4')
-                audio_from_which_video = args.driving if ((flag_driving_has_audio and args.audio_priority == 'driving') or (not flag_source_has_audio)) else args.source
-                log(f"Audio is selected from {audio_from_which_video}, concat mode")
-                add_audio_to_video(wfp_concat, audio_from_which_video, wfp_concat_with_audio)
-                os.replace(wfp_concat_with_audio, wfp_concat)
-                log(f"Replace {wfp_concat_with_audio} with {wfp_concat}")
-
-            # save the animated result
-            wfp = osp.join(args.output_dir, f'{basename(args.source)}--{basename(args.driving)}.mp4')
-            if I_p_pstbk_lst is not None and len(I_p_pstbk_lst) > 0:
-                images2video(I_p_pstbk_lst, wfp=wfp, fps=output_fps)
-            else:
-                images2video(I_p_lst, wfp=wfp, fps=output_fps)
 
             ######### build the final result #########
             if flag_source_has_audio or flag_driving_has_audio:
@@ -502,17 +570,13 @@ class LivePortraitPipeline(object):
             if wfp_template not in (None, ''):
                 log(f'Animated template: {wfp_template}, you can specify `-d` argument with this template path next time to avoid cropping video, motion making and protecting privacy.', style='bold green')
             log(f'Animated video: {wfp}')
-            log(f'Animated video with concat: {wfp_concat}')
         else:
-            wfp_concat = osp.join(args.output_dir, f'{basename(args.source)}--{basename(args.driving)}_concat.jpg')
-            cv2.imwrite(wfp_concat, frames_concatenated[0][..., ::-1])
             wfp = osp.join(args.output_dir, f'{basename(args.source)}--{basename(args.driving)}.jpg')
             if I_p_pstbk_lst is not None and len(I_p_pstbk_lst) > 0:
                 cv2.imwrite(wfp, I_p_pstbk_lst[0][..., ::-1])
             else:
-                cv2.imwrite(wfp, frames_concatenated[0][..., ::-1])
+                cv2.imwrite(wfp, I_p_lst[0][..., ::-1])
             # final log
             log(f'Animated image: {wfp}')
-            log(f'Animated image with concat: {wfp_concat}')
 
         return wfp, wfp_concat

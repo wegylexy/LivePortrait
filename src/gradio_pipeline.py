@@ -221,9 +221,9 @@ class GradioPipeline(LivePortraitPipeline):
             output_path, output_path_concat = self.execute(self.args)
             gr.Info("Run successfully!", duration=2)
             if output_path.endswith(".jpg"):
-                return gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), output_path, gr.update(visible=True), output_path_concat, gr.update(visible=True)
+                return gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), output_path, gr.update(visible=True), None, gr.update(visible=False)
             else:
-                return output_path, gr.update(visible=True), output_path_concat, gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
+                return output_path, gr.update(visible=True), None, gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
         else:
             raise gr.Error("Please upload the source portrait or source video, and driving video 🤗🤗🤗", duration=5)
 
@@ -454,19 +454,7 @@ class GradioPipeline(LivePortraitPipeline):
 
         mkdir(self.args.output_dir)
         flag_source_has_audio = has_audio_stream(input_video)
-
-        ######### build the final concatenation result #########
-        # source frame | generation
-        frames_concatenated = concat_frames(driving_image_lst=None, source_image_lst=img_crop_256x256_lst, I_p_lst=I_p_lst)
-        wfp_concat = osp.join(self.args.output_dir, f'{basename(input_video)}_retargeting_concat.mp4')
-        images2video(frames_concatenated, wfp=wfp_concat, fps=source_fps)
-
-        if flag_source_has_audio:
-            # final result with concatenation
-            wfp_concat_with_audio = osp.join(self.args.output_dir, f'{basename(input_video)}_retargeting_concat_with_audio.mp4')
-            add_audio_to_video(wfp_concat, input_video, wfp_concat_with_audio)
-            os.replace(wfp_concat_with_audio, wfp_concat)
-            log(f"Replace {wfp_concat_with_audio} with {wfp_concat}")
+        wfp_concat = None
 
         # save the animated result
         wfp = osp.join(self.args.output_dir, f'{basename(input_video)}_retargeting.mp4')
@@ -482,7 +470,7 @@ class GradioPipeline(LivePortraitPipeline):
             os.replace(wfp_with_audio, wfp)
             log(f"Replace {wfp_with_audio} with {wfp}")
         gr.Info("Run successfully!", duration=2)
-        return wfp_concat, wfp
+        return wfp, None
 
     @torch.no_grad()
     def prepare_retargeting_video(self, input_video, retargeting_source_scale, device, input_lip_ratio, driving_smooth_observation_variance_retargeting, flag_do_crop=True):

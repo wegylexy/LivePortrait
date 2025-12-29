@@ -309,3 +309,138 @@ class Cropper(object):
 
             trajectory.lmk_lst.append(lmk)
         return trajectory.lmk_lst
+
+    def crop_source_video_chunk(self, source_rgb_lst, crop_cfg: CropConfig, prev_lmk=None, lmk_lst=None, **kwargs):
+        trajectory = Trajectory()
+        direction = kwargs.get("direction", "large-small")
+
+        for idx, frame_rgb in enumerate(source_rgb_lst):
+            if lmk_lst is not None:
+                lmk = lmk_lst[idx]
+            elif idx == 0 and prev_lmk is None:
+                src_face = self.face_analysis_wrapper.get(
+                    contiguous(frame_rgb[..., ::-1]),
+                    flag_do_landmark_2d_106=True,
+                    direction=crop_cfg.direction,
+                    max_face_num=crop_cfg.max_face_num,
+                )
+                if len(src_face) == 0:
+                    log(f"No face detected in the frame #{idx}")
+                    # Use previous lmk if available, else skip or fail?
+                    # For chunking, we might want to handle this gracefully.
+                    # Here we assume face is found or we use a placeholder if needed.
+                    # For now, let's raise or continue.
+                    continue
+                elif len(src_face) > 1:
+                    log(f"More than one face detected in the source frame_{idx}, only pick one face by rule {direction}.")
+                src_face = src_face[0]
+                lmk = src_face.landmark_2d_106
+                lmk = self.human_landmark_runner.run(frame_rgb, lmk)
+                trajectory.start, trajectory.end = idx, idx
+            else:
+                ref_lmk = prev_lmk if (idx == 0 and prev_lmk is not None) else trajectory.lmk_lst[-1]
+                lmk = self.human_landmark_runner.run(frame_rgb, ref_lmk)
+                trajectory.end = idx
+
+            trajectory.lmk_lst.append(lmk)
+
+            # crop the face
+            ret_dct = crop_image(
+                frame_rgb,  # ndarray
+                lmk,  # 106x2 or Nx2
+                dsize=crop_cfg.dsize,
+                scale=crop_cfg.scale,
+                vx_ratio=crop_cfg.vx_ratio,
+                vy_ratio=crop_cfg.vy_ratio,
+                flag_do_rot=crop_cfg.flag_do_rot,
+            )
+
+            # update a 256x256 version for network input
+            ret_dct["img_crop_256x256"] = cv2.resize(ret_dct["img_crop"], (256, 256), interpolation=cv2.INTER_AREA)
+            ret_dct["lmk_crop_256x256"] = ret_dct["pt_crop"] * 256 / crop_cfg.dsize
+
+            trajectory.frame_rgb_crop_lst.append(ret_dct["img_crop_256x256"])
+            trajectory.lmk_crop_lst.append(ret_dct["lmk_crop_256x256"])
+            trajectory.M_c2o_lst.append(ret_dct['M_c2o'])
+
+        return {
+            "frame_crop_lst": trajectory.frame_rgb_crop_lst,
+            "lmk_crop_lst": trajectory.lmk_crop_lst,
+            "M_c2o_lst": trajectory.M_c2o_lst,
+            "lmk_lst": trajectory.lmk_lst, # Original space landmarks
+            "last_lmk": trajectory.lmk_lst[-1] if trajectory.lmk_lst else None
+        }
+
+    def crop_driving_video_chunk(self, driving_rgb_lst, crop_cfg: CropConfig, prev_lmk=None, **kwargs):
+        # Re-use crop_driving_video logic but for chunks
+        # Note: This does not support global bbox averaging across the whole video if called in chunks,
+        # but calculates average bbox per chunk.
+        trajectory = Trajectory()
+        # We can reuse the existing method if we just want the landmarks and crops
+        # But we need to handle the state (prev_lmk).
+        # Since crop_driving_video is relatively simple (tracking + bbox crop), let's implement a chunk version.
+
+        # For simplicity in this context, we can actually use crop_source_video_chunk logic
+        # but we need to respect the driving video cropping config (scale_crop_driving_video etc).
+        # However, crop_driving_video uses `crop_image_by_bbox` and `average_bbox_lst`.
+        # To properly support chunking for driving video with `average_bbox_lst`, we would need two passes
+        # (one to get all bboxes, one to crop).
+        # Given the OOM constraint, we will accept per-chunk bbox averaging or use the `crop_source_video` approach
+        # if `flag_crop_driving_video` is True.
+
+        # For now, let's assume we can use the same tracking logic as source but with driving parameters.
+        # But `crop_driving_video` returns specific keys.
+        # Let's implement a basic tracker for driving chunks.
+
+        direction = kwargs.get("direction", "large-small")
+        for idx, frame_rgb in enumerate(driving_rgb_lst):
+            if idx == 0 and prev_lmk is None:
+                src_face = self.face_analysis_wrapper.get(
+                    contiguous(frame_rgb[..., ::-1]),
+                    flag_do_landmark_2d_106=True,
+                    direction=direction,
+                )
+                if len(src_face) == 0:
+                    log(f"No face detected in the frame #{idx}")
+                    continue
+                elif len(src_face) > 1:
+                    log(f"More than one face detected in the driving frame_{idx}, only pick one face by rule {direction}.")
+                src_face = src_face[0]
+                lmk = src_face.landmark_2d_106
+                lmk = self.human_landmark_runner.run(frame_rgb, lmk)
+            else:
+                ref_lmk = prev_lmk if (idx == 0 and prev_lmk is not None) else trajectory.lmk_lst[-1]
+                lmk = self.human_landmark_runner.run(frame_rgb, ref_lmk)
+
+            trajectory.lmk_lst.append(lmk)
+
+            ret_bbox = parse_bbox_from_landmark(
+                lmk,
+                scale=crop_cfg.scale_crop_driving_video,
+                vx_ratio_crop_driving_video=crop_cfg.vx_ratio_crop_driving_video,
+                vy_ratio=crop_cfg.vy_ratio_crop_driving_video,
+            )["bbox"]
+            bbox = [ret_bbox[0, 0], ret_bbox[0, 1], ret_bbox[2, 0], ret_bbox[2, 1]]
+            trajectory.bbox_lst.append(bbox)
+            trajectory.frame_rgb_lst.append(frame_rgb)
+
+        # Per-chunk average bbox
+        global_bbox = average_bbox_lst(trajectory.bbox_lst)
+
+        for idx, (frame_rgb, lmk) in enumerate(zip(trajectory.frame_rgb_lst, trajectory.lmk_lst)):
+            ret_dct = crop_image_by_bbox(
+                frame_rgb,
+                global_bbox,
+                lmk=lmk,
+                dsize=kwargs.get("dsize", 512),
+                flag_rot=False,
+                borderValue=(0, 0, 0),
+            )
+            trajectory.frame_rgb_crop_lst.append(ret_dct["img_crop"])
+            trajectory.lmk_crop_lst.append(ret_dct["lmk_crop"])
+
+        return {
+            "frame_crop_lst": trajectory.frame_rgb_crop_lst,
+            "lmk_crop_lst": trajectory.lmk_crop_lst,
+            "last_lmk": trajectory.lmk_lst[-1] if trajectory.lmk_lst else None
+        }
