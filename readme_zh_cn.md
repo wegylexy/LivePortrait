@@ -1,46 +1,59 @@
 <h1 align="center">LivePortrait: Efficient Portrait Animation with Stitching and Retargeting Control</h1>
 
+<!-- ===== 作者信息 ===== -->
 <div align='center'>
-    <a href='https://github.com/cleardusk' target='_blank'><strong>郭建珠</strong></a><sup> 1†</sup>&emsp;
-    <a href='https://github.com/Mystery099' target='_blank'><strong>张丁芸</strong></a><sup> 1,2</sup>&emsp;
-    <a href='https://github.com/KwaiVGI' target='_blank'><strong>刘晓强</strong></a><sup> 1</sup>&emsp;
-    <a href='https://github.com/zzzweakman' target='_blank'><strong>钟智舟</strong></a><sup> 1,3</sup>&emsp;
-    <a href='https://scholar.google.com.hk/citations?user=_8k1ubAAAAAJ' target='_blank'><strong>张渊</strong></a><sup> 1</sup>&emsp;
-    <a href='https://scholar.google.com/citations?user=P6MraaYAAAAJ' target='_blank'><strong>万鹏飞</strong></a><sup> 1</sup>&emsp;
-    <a href='https://openreview.net/profile?id=~Di_ZHANG3' target='_blank'><strong>张迪</strong></a><sup> 1</sup>&emsp;
+  <a href='https://github.com/cleardusk' target='_blank'><strong>郭建珠</strong></a><sup> 1*†</sup>&emsp;
+  <a href='https://github.com/Mystery099' target='_blank'><strong>张丁芸</strong></a><sup> 1,2*</sup>&emsp;
+  <a href='https://github.com/KwaiVGI' target='_blank'><strong>刘晓强</strong></a><sup> 1</sup>&emsp;
+  <a href='https://github.com/zzzweakman' target='_blank'><strong>钟智舟</strong></a><sup> 1,3</sup>&emsp;
+  <a href='https://scholar.google.com.hk/citations?user=_8k1ubAAAAAJ' target='_blank'><strong>张渊</strong></a><sup> 1</sup>&emsp;
+  <a href='https://scholar.google.com/citations?user=P6MraaYAAAAJ' target='_blank'><strong>万鹏飞</strong></a><sup> 1</sup>&emsp;
+  <a href='https://openreview.net/profile?id=~Di_ZHANG3' target='_blank'><strong>张迪</strong></a><sup> 1</sup>&emsp;
 </div>
 
-<div align='center'>
-    <sup>1 </sup>快手科技&emsp; <sup>2 </sup>中国科学技术大学&emsp; <sup>3 </sup>复旦大学&emsp;
-</div>
-<div align='center'>
-    <small><sup>†</sup> 通讯作者（Project Lead）</small>
-</div>
 
+<div align='center'>
+  <sup>1 </sup>快手科技&emsp; <sup>2 </sup>中国科学技术大学&emsp; <sup>3 </sup>复旦大学&emsp;
+</div>
+<div align='center'>
+  <small><sup>*</sup> Equal contributions</small>
+  <small><sup>†</sup> Project lead</small>
+</div>
 <br>
+
+<!-- ===== LivePortrait – 快速上手 & 链接 ===== -->
 <div align="center">
-  <!-- <a href='LICENSE'><img src='https://img.shields.io/badge/license-MIT-yellow'></a> -->
-  <a href='https://arxiv.org/pdf/2407.03168'><img src='https://img.shields.io/badge/arXiv-LivePortrait-red'></a>
-  <a href='https://liveportrait.github.io'><img src='https://img.shields.io/badge/Project-LivePortrait-green'></a>
-  <a href='https://huggingface.co/spaces/KwaiVGI/liveportrait'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue'></a>
-  <a href="https://github.com/KwaiVGI/LivePortrait"><img src="https://img.shields.io/github/stars/KwaiVGI/LivePortrait"></a>
-  <br>
-  <a href="./readme.md"><strong>English</strong></a> | <strong>简体中文</strong>
+
+  <!-- 🚀 快速体验按钮 -->
+  <p>
+    <a href="https://huggingface.co/cleardusk/LivePortrait-Windows/blob/main/LivePortrait-Windows-v20240829.zip" target="_blank"><img src="https://img.shields.io/badge/🖥 Windows 一键安装-v20240829-00BFFF?style=for-the-badge&logo=windows&logoColor=white" alt="Windows 一键安装包"></a>&nbsp;
+    <a href="https://huggingface.co/spaces/KlingTeam/LivePortrait" target="_blank"><img src="https://img.shields.io/badge/🌐 在线体验-FF6F00?style=for-the-badge&logo=huggingface&logoColor=white" alt="HuggingFace 在线体验"></a>
+  </p>
+
+  <!-- 📄 论文 / 项目 / Star 等徽章 -->
+  <p>
+    <a href="https://arxiv.org/pdf/2407.03168" target="_blank"><img src="https://img.shields.io/badge/arXiv-LivePortrait-red" alt="arXiv link"></a>&nbsp;
+    <a href="https://liveportrait.github.io" target="_blank"><img src="https://img.shields.io/badge/Project-Homepage-green" alt="project homepage"></a>&nbsp;
+    <a href="https://huggingface.co/spaces/KlingTeam/LivePortrait" target="_blank"><img src="https://img.shields.io/badge/🤗 Hugging Face-Spaces-blue" alt="HF space"></a>&nbsp;
+    <a href="https://hellogithub.com/repository/bed652ef02154dd7a434e0720125639e" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=bed652ef02154dd7a434e0720125639e&claim_uid=XyBT2K9QJ7RZhej&theme=small" alt="Featured by HelloGitHub"></a>&nbsp;
+    <a href="https://github.com/KlingTeam/LivePortrait" target="_blank"><img src="https://img.shields.io/github/stars/KlingTeam/LivePortrait?style=social" alt="GitHub stars"></a>
+  </p>
+
+  <!-- 🌏 语言切换 -->
+  <p><a href="./readme.md"><strong>English</strong></a> | <strong>简体中文</strong></p>
+
+  <!-- 🎬 Showcase GIF -->
+  <p><img src="./assets/docs/showcase2.gif" alt="LivePortrait 效果展示 GIF"></p>
+  <p>🔥 更多效果，请访问我们的 <a href="https://liveportrait.github.io/" target="_blank"><strong>主页</strong></a> 🔥</p>
+
 </div>
-
-<br>
-
-
-<p align="center">
-  <img src="./assets/docs/showcase2.gif" alt="showcase">
-  <br>
-  🔥 更多效果，请查看我们的 <a href="https://liveportrait.github.io/"><strong>主页</strong></a> 🔥
-</p>
-
+<!-- ===== /LivePortrait ===== -->
 
 
 ## 🔥 更新日志
-- **`2024/10/18`**：❗ 我们更新了`transformers`，`gradio`库的版本避免安全漏洞，具体查看[这里](https://github.com/KwaiVGI/LivePortrait/pull/421/files).
+- **`2025/06/01`**：🌍 过去一年里，LivePortrait 🚀 已成为高效的人像与宠物（猫狗）动画解决方案，被快手、抖音、剪映、视频号等主流视频平台，以及众多初创公司和创作者所采用。🎉
+- **`2025/01/01`**：🐶 我们更新了一版动物模型（使用了更多动物数据），具体查看[**这里**](./assets/docs/changelog/2025-01-01.md).
+- **`2024/10/18`**：❗ 我们更新了`transformers`，`gradio`库的版本避免安全漏洞，具体查看[这里](https://github.com/KlingTeam/LivePortrait/pull/421/files).
 - **`2024/08/29`**：📦 我们更新了Windows[一键安装程序](https://huggingface.co/cleardusk/LivePortrait-Windows/blob/main/LivePortrait-Windows-v20240829.zip)并支持自动更新, 详情建[这里](https://huggingface.co/cleardusk/LivePortrait-Windows#20240829)。
 - **`2024/08/19`**：🖼️ 我们支持了**图像驱动模式**和**区域控制**。详情请见[**这里**](./assets/docs/changelog/2024-08-19.md)。
 - **`2024/08/06`**：🎨 我们在Gradio界面支持**精确的人像编辑**, 受到[ComfyUI-AdvancedLivePortrait](https://github.com/PowerHouseMan/ComfyUI-AdvancedLivePortrait)启发。详见[**这里**](./assets/docs/changelog/2024-08-06.md)。
@@ -49,9 +62,9 @@
 - **`2024/07/25`**：📦 Windows用户现在可以从 [HuggingFace](https://huggingface.co/cleardusk/LivePortrait-Windows/tree/main) 或 [百度云](https://pan.baidu.com/s/1FWsWqKe0eNfXrwjEhhCqlw?pwd=86q2) 下载软件包。解压并双击`run_windows.bat`即可享受！
 - **`2024/07/24`**：🎨 我们在Gradio界面支持源人像的姿势编辑。我们还降低了默认检测阈值以增加召回率。[玩得开心](assets/docs/changelog/2024-07-24.md)！
 - **`2024/07/19`**：✨ 我们支持🎞️ **人像视频编辑（aka v2v）**！更多信息见[**这里**](assets/docs/changelog/2024-07-19.md)。
-- **`2024/07/17`**：🍎 我们支持macOS搭载Apple Silicon，修改来自 [jeethu](https://github.com/jeethu) 的PR [#143](https://github.com/KwaiVGI/LivePortrait/pull/143) 。
+- **`2024/07/17`**：🍎 我们支持macOS搭载Apple Silicon，修改来自 [jeethu](https://github.com/jeethu) 的PR [#143](https://github.com/KlingTeam/LivePortrait/pull/143) 。
 - **`2024/07/10`**：💪我们支持音频和视频拼接、驱动视频自动裁剪以及制作模板以保护隐私。更多信息见[这里](assets/docs/changelog/2024-07-10.md)。
-- **`2024/07/09`**：🤗 我们发布了[HuggingFace Space](https://huggingface.co/spaces/KwaiVGI/liveportrait)，感谢HF团队和[Gradio](https://github.com/gradio-app/gradio)！
+- **`2024/07/09`**：🤗 我们发布了[HuggingFace Space](https://huggingface.co/spaces/KlingTeam/LivePortrait)，感谢HF团队和[Gradio](https://github.com/gradio-app/gradio)！
 - **`2024/07/04`**：😊 我们发布了初始版本的推理代码和模型。持续更新，敬请关注！
 - **`2024/07/04`**：🔥 我们发布了[主页](https://liveportrait.github.io)和在[arXiv](https://arxiv.org/pdf/2407.03168)上的技术报告。
 
@@ -67,7 +80,7 @@
 > 确保您的系统已安装[`git`](https://git-scm.com/)、[`conda`](https://anaconda.org/anaconda/conda)和[`FFmpeg`](https://ffmpeg.org/download.html)。有关FFmpeg安装的详细信息，见[**如何安装FFmpeg**](assets/docs/how-to-install-ffmpeg.md)。
 
 ```bash
-git clone https://github.com/KwaiVGI/LivePortrait
+git clone https://github.com/KlingTeam/LivePortrait
 cd LivePortrait
 
 # 使用conda创建环境
@@ -119,7 +132,7 @@ pip install -r requirements_macOS.txt
 从HuggingFace下载预训练权重的最简单方法是：
 ```bash
 # !pip install -U "huggingface_hub[cli]"
-huggingface-cli download KwaiVGI/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"
+huggingface-cli download KlingTeam/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"
 ```
 
 若您不能访问HuggingFace平台，你可以访问其镜像网站[hf-mirror](https://hf-mirror.com/)进行下载操作：
@@ -127,7 +140,7 @@ huggingface-cli download KwaiVGI/LivePortrait --local-dir pretrained_weights --e
 ```bash
 # !pip install -U "huggingface_hub[cli]"
 export HF_ENDPOINT=https://hf-mirror.com
-huggingface-cli download KwaiVGI/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"
+huggingface-cli download KlingTeam/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"
 ```
 
 或者，您可以从[Google Drive](https://drive.google.com/drive/folders/1UtKgzKjFAOmZkhNK-OYT0caJ_w2XAnib)或[百度云](https://pan.baidu.com/s/1MGctWmNla_vZxDbEp2Dtzw?pwd=z5cn)（进行中）下载所有预训练权重。解压并将它们放置在`./pretrained_weights`目录下。
@@ -238,7 +251,7 @@ python app.py --flag_do_torch_compile
 ```
 **注意**：此方法在Windows和macOS上不受支持。
 
-**或者，在[HuggingFace](https://huggingface.co/spaces/KwaiVGI/LivePortrait)上轻松尝试**🤗。
+**或者，在[HuggingFace](https://huggingface.co/spaces/KlingTeam/LivePortrait)上轻松尝试**🤗。
 
 ### 5. 推理速度预估 🚀🚀🚀
 我们还提供了一个脚本来评估每个模块的推理速度：
@@ -254,8 +267,10 @@ python speed.py
 
 ### 社区项目
 
-| 仓库 (按时间排序) | 描述 | 作者 |
+| 仓库 | 描述 | 作者 / 链接 |
 |------|------|--------|
+| [**ditto-talkinghead**](https://github.com/antgroup/ditto-talkinghead) | 实时音频驱动。 | [论文](https://arxiv.org/abs/2411.19509), [主页](https://digital-avatar.github.io/ai/Ditto/) |
+| [**FasterLivePortrait**](https://github.com/warmshao/FasterLivePortrait) | 基于TensorRT加速更快的实时版本。 | [@warmshao](https://github.com/warmshao) |
 | [**AdvancedLivePortrait-WebUI**](https://github.com/jhj0517/AdvancedLivePortrait-WebUI) | Dedicated gradio based WebUI started from [ComfyUI-AdvancedLivePortrait](https://github.com/PowerHouseMan/ComfyUI-AdvancedLivePortrait) | [@jhj0517](https://github.com/jhj0517) |
 | [**FacePoke**](https://github.com/jbilcke-hf/FacePoke) | 一个实时的头部姿态表情控制应用，通过鼠标控制！ | [@jbilcke-hf](https://github.com/jbilcke-hf) |
 | [**FaceFusion**](https://github.com/facefusion/facefusion) | FaceFusion 3.0 集成了 LivePortrait 作为 `expression_restorer` 和 `face_editor` 处理器。 | [@henryruhs](https://github.com/henryruhs) |
@@ -308,3 +323,17 @@ python speed.py
 ## 联系方式 📧
 
 [**Jianzhu Guo (郭建珠)**](https://guojianzhu.com); **guojianzhu1994@gmail.com**；
+
+## Star History 🌟
+<details>
+  <summary>点击展开查看项目 Star 曲线</summary>
+  <p align="center">
+    <a href="https://www.star-history.com/#KlingTeam/LivePortrait&Timeline" target="_blank">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=KlingTeam/LivePortrait&type=Timeline&theme=dark" />
+        <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=KlingTeam/LivePortrait&type=Timeline" />
+        <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=KlingTeam/LivePortrait&type=Timeline" width="90%" />
+      </picture>
+    </a>
+  </p>
+</details>

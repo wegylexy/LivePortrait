@@ -1,8 +1,8 @@
 <h1 align="center">LivePortrait: Efficient Portrait Animation with Stitching and Retargeting Control</h1>
 
 <div align='center'>
-    <a href='https://github.com/cleardusk' target='_blank'><strong>Jianzhu Guo</strong></a><sup> 1†</sup>&emsp;
-    <a href='https://github.com/Mystery099' target='_blank'><strong>Dingyun Zhang</strong></a><sup> 1,2</sup>&emsp;
+    <a href='https://github.com/cleardusk' target='_blank'><strong>Jianzhu Guo</strong></a><sup> 1*†</sup>&emsp;
+    <a href='https://github.com/Mystery099' target='_blank'><strong>Dingyun Zhang</strong></a><sup> 1,2*</sup>&emsp;
     <a href='https://github.com/KwaiVGI' target='_blank'><strong>Xiaoqiang Liu</strong></a><sup> 1</sup>&emsp;
     <a href='https://github.com/zzzweakman' target='_blank'><strong>Zhizhou Zhong</strong></a><sup> 1,3</sup>&emsp;
     <a href='https://scholar.google.com.hk/citations?user=_8k1ubAAAAAJ' target='_blank'><strong>Yuan Zhang</strong></a><sup> 1</sup>&emsp;
@@ -17,31 +17,44 @@
     <sup>1 </sup>Kuaishou Technology&emsp; <sup>2 </sup>University of Science and Technology of China&emsp; <sup>3 </sup>Fudan University&emsp;
 </div>
 <div align='center'>
-    <small><sup>†</sup> Corresponding author</small>
+    <small><sup>*</sup> Equal contributions</small>
+    <small><sup>†</sup> Project lead</small>
 </div>
 <br>
 
+<!-- ===== LivePortrait – Quick Start & Links ===== -->
 <div align="center">
-  <!-- <a href='LICENSE'><img src='https://img.shields.io/badge/license-MIT-yellow'></a> -->
-  <a href='https://arxiv.org/pdf/2407.03168'><img src='https://img.shields.io/badge/arXiv-LivePortrait-red'></a>
-  <a href='https://liveportrait.github.io'><img src='https://img.shields.io/badge/Project-LivePortrait-green'></a>
-  <a href='https://huggingface.co/spaces/KwaiVGI/liveportrait'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue'></a>
-  <a href="https://github.com/KwaiVGI/LivePortrait"><img src="https://img.shields.io/github/stars/KwaiVGI/LivePortrait"></a>
-  <br>
-  <strong>English</strong> | <a href="./readme_zh_cn.md"><strong>简体中文</strong></a>
+
+  <!-- 🚀 Quick Start buttons -->
+  <p>
+    <a href="https://huggingface.co/cleardusk/LivePortrait-Windows/blob/main/LivePortrait-Windows-v20240829.zip" target="_blank"><img src="https://img.shields.io/badge/🖥 Windows Installer-v20240829-00BFFF?style=for-the-badge&logo=windows&logoColor=white" alt="Windows one-click installer"></a>&nbsp;
+    <a href="https://huggingface.co/spaces/KlingTeam/LivePortrait" target="_blank"><img src="https://img.shields.io/badge/🌐 Try Online Demo-FF6F00?style=for-the-badge&logo=huggingface&logoColor=white" alt="HuggingFace online demo"></a>
+  </p>
+
+  <!-- 📄 Paper / project / GitHub stats -->
+  <p>
+    <a href="https://arxiv.org/pdf/2407.03168" target="_blank"><img src="https://img.shields.io/badge/arXiv-LivePortrait-red" alt="arXiv link"></a>&nbsp;
+    <a href="https://liveportrait.github.io" target="_blank"><img src="https://img.shields.io/badge/Project-Homepage-green" alt="project homepage"></a>&nbsp;
+    <a href="https://huggingface.co/spaces/KlingTeam/LivePortrait" target="_blank"><img src="https://img.shields.io/badge/🤗 Hugging Face-Spaces-blue" alt="HF space"></a>&nbsp;
+    <a href="https://hellogithub.com/repository/bed652ef02154dd7a434e0720125639e" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=bed652ef02154dd7a434e0720125639e&claim_uid=XyBT2K9QJ7RZhej&theme=small" alt="Featured by HelloGitHub"></a>&nbsp;
+    <a href="https://github.com/KlingTeam/LivePortrait" target="_blank"><img src="https://img.shields.io/github/stars/KlingTeam/LivePortrait?style=social" alt="GitHub stars"></a>
+  </p>
+
+  <!-- 🌏 Language switch -->
+  <p><strong>English</strong> | <a href="./readme_zh_cn.md"><strong>简体中文</strong></a></p>
+
+  <!-- 🎬 Showcase GIF -->
+  <p><img src="./assets/docs/showcase2.gif" alt="LivePortrait showcase GIF"></p>
+  <p>🔥 For more results, visit our <a href="https://liveportrait.github.io/" target="_blank"><strong>homepage</strong></a> 🔥</p>
+
 </div>
-<br>
-
-
-<p align="center">
-  <img src="./assets/docs/showcase2.gif" alt="showcase">
-  <br>
-  🔥 For more results, visit our <a href="https://liveportrait.github.io/"><strong>homepage</strong></a> 🔥
-</p>
+<!-- ===== /LivePortrait ===== -->
 
 
 ## 🔥 Updates
-- **`2024/10/18`**: ❗ We have updated the versions of the `transformers` and `gradio` libraries to avoid security vulnerabilities. Details [here](https://github.com/KwaiVGI/LivePortrait/pull/421/files).
+- **`2025/06/01`**: 🌍 Over the past year, **LivePortrait** has 🚀 become an efficient portrait-animation (humans, cats and dogs) solution adopted by major video platforms—Kuaishou, Douyin, Jianying, WeChat Channels—as well as numerous startups and creators. 🎉
+- **`2025/01/01`**: 🐶 We updated a new version of the Animals model with more data, see [**here**](./assets/docs/changelog/2025-01-01.md).
+- **`2024/10/18`**: ❗ We have updated the versions of the `transformers` and `gradio` libraries to avoid security vulnerabilities. Details [here](https://github.com/KlingTeam/LivePortrait/pull/421/files).
 - **`2024/08/29`**: 📦 We update the Windows [one-click installer](https://huggingface.co/cleardusk/LivePortrait-Windows/blob/main/LivePortrait-Windows-v20240829.zip) and support auto-updates, see [changelog](https://huggingface.co/cleardusk/LivePortrait-Windows#20240829).
 - **`2024/08/19`**: 🖼️ We support **image driven mode** and **regional control**. For details, see [**here**](./assets/docs/changelog/2024-08-19.md).
 - **`2024/08/06`**: 🎨 We support **precise portrait editing** in the Gradio interface, inspired by [ComfyUI-AdvancedLivePortrait](https://github.com/PowerHouseMan/ComfyUI-AdvancedLivePortrait). See [**here**](./assets/docs/changelog/2024-08-06.md).
@@ -50,9 +63,9 @@
 - **`2024/07/25`**: 📦 Windows users can now download the package from [HuggingFace](https://huggingface.co/cleardusk/LivePortrait-Windows/tree/main). Simply unzip and double-click `run_windows.bat` to enjoy!
 - **`2024/07/24`**: 🎨 We support pose editing for source portraits in the Gradio interface. We’ve also lowered the default detection threshold to increase recall. [Have fun](assets/docs/changelog/2024-07-24.md)!
 - **`2024/07/19`**: ✨ We support 🎞️ **portrait video editing (aka v2v)**! More to see [here](assets/docs/changelog/2024-07-19.md).
-- **`2024/07/17`**: 🍎 We support macOS with Apple Silicon, modified from [jeethu](https://github.com/jeethu)'s PR [#143](https://github.com/KwaiVGI/LivePortrait/pull/143).
+- **`2024/07/17`**: 🍎 We support macOS with Apple Silicon, modified from [jeethu](https://github.com/jeethu)'s PR [#143](https://github.com/KlingTeam/LivePortrait/pull/143).
 - **`2024/07/10`**: 💪 We support audio and video concatenating, driving video auto-cropping, and template making to protect privacy. More to see [here](assets/docs/changelog/2024-07-10.md).
-- **`2024/07/09`**: 🤗 We released the [HuggingFace Space](https://huggingface.co/spaces/KwaiVGI/liveportrait), thanks to the HF team and [Gradio](https://github.com/gradio-app/gradio)!
+- **`2024/07/09`**: 🤗 We released the [HuggingFace Space](https://huggingface.co/spaces/KlingTeam/LivePortrait), thanks to the HF team and [Gradio](https://github.com/gradio-app/gradio)!
 - **`2024/07/04`**: 😊 We released the initial version of the inference code and models. Continuous updates, stay tuned!
 - **`2024/07/04`**: 🔥 We released the [homepage](https://liveportrait.github.io) and technical report on [arXiv](https://arxiv.org/pdf/2407.03168).
 
@@ -69,7 +82,7 @@ We are actively updating and improving this repository. If you find any bugs or 
 > Make sure your system has [`git`](https://git-scm.com/), [`conda`](https://anaconda.org/anaconda/conda), and [`FFmpeg`](https://ffmpeg.org/download.html) installed. For details on FFmpeg installation, see [**how to install FFmpeg**](assets/docs/how-to-install-ffmpeg.md).
 
 ```bash
-git clone https://github.com/KwaiVGI/LivePortrait
+git clone https://github.com/KlingTeam/LivePortrait
 cd LivePortrait
 
 # create env using conda
@@ -77,33 +90,38 @@ conda create -n LivePortrait python=3.10
 conda activate LivePortrait
 ```
 
-#### For Linux or Windows Users
-[X-Pose](https://github.com/IDEA-Research/X-Pose) requires your `torch` version to be compatible with the CUDA version.
+#### For Linux 🐧 or Windows 🪟 Users
+[X-Pose](https://github.com/IDEA-Research/X-Pose), required by Animals mode, is a dependency that needs to be installed. The step of `Check your CUDA versions` is **optional** if you only want to run Humans mode.
 
-Firstly, check your current CUDA version by:
-```bash
-nvcc -V # example versions: 11.1, 11.8, 12.1, etc.
-```
+<details>
+  <summary>Check your CUDA versions</summary>
 
-Then, install the corresponding torch version. Here are examples for different CUDA versions. Visit the [PyTorch Official Website](https://pytorch.org/get-started/previous-versions) for installation commands if your CUDA version is not listed:
-```bash
-# for CUDA 11.1
-pip install torch==1.10.1+cu111 torchvision==0.11.2 torchaudio==0.10.1 -f https://download.pytorch.org/whl/cu111/torch_stable.html
-# for CUDA 11.8
-pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu118
-# for CUDA 12.1
-pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu121
-# ...
-```
+  Firstly, check your current CUDA version by:
+  ```bash
+  nvcc -V # example versions: 11.1, 11.8, 12.1, etc.
+  ```
 
-**Note**: On Windows systems, some higher versions of CUDA (such as 12.4, 12.6, etc.) may lead to unknown issues. You may consider downgrading CUDA to version 11.8 for stability. See the [downgrade guide](https://github.com/dimitribarbot/sd-webui-live-portrait/blob/main/assets/docs/how-to-install-xpose.md#cuda-toolkit-118) by [@dimitribarbot](https://github.com/dimitribarbot).
+  Then, install the corresponding torch version. Here are examples for different CUDA versions. Visit the [PyTorch Official Website](https://pytorch.org/get-started/previous-versions) for installation commands if your CUDA version is not listed:
+  ```bash
+  # for CUDA 11.1
+  pip install torch==1.10.1+cu111 torchvision==0.11.2 torchaudio==0.10.1 -f https://download.pytorch.org/whl/cu111/torch_stable.html
+  # for CUDA 11.8
+  pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu118
+  # for CUDA 12.1
+  pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu121
+  # ...
+  ```
+
+  **Note**: On Windows systems, some higher versions of CUDA (such as 12.4, 12.6, etc.) may lead to unknown issues. You may consider downgrading CUDA to version 11.8 for stability. See the [downgrade guide](https://github.com/dimitribarbot/sd-webui-live-portrait/blob/main/assets/docs/how-to-install-xpose.md#cuda-toolkit-118) by [@dimitribarbot](https://github.com/dimitribarbot).
+</details>
+
 
 Finally, install the remaining dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-#### For macOS with Apple Silicon Users
+#### For macOS  with Apple Silicon Users
 The [X-Pose](https://github.com/IDEA-Research/X-Pose) dependency does not support macOS, so you can skip its installation. While Humans mode works as usual, Animals mode is not supported. Use the provided requirements file for macOS with Apple Silicon:
 ```bash
 # for macOS with Apple Silicon users
@@ -115,14 +133,14 @@ pip install -r requirements_macOS.txt
 The easiest way to download the pretrained weights is from HuggingFace:
 ```bash
 # !pip install -U "huggingface_hub[cli]"
-huggingface-cli download KwaiVGI/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"
+huggingface-cli download KlingTeam/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"
 ```
 
 If you cannot access to Huggingface, you can use [hf-mirror](https://hf-mirror.com/) to download:
 ```bash
 # !pip install -U "huggingface_hub[cli]"
 export HF_ENDPOINT=https://hf-mirror.com
-huggingface-cli download KwaiVGI/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"
+huggingface-cli download KlingTeam/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"
 ```
 
 Alternatively, you can download all pretrained weights from [Google Drive](https://drive.google.com/drive/folders/1UtKgzKjFAOmZkhNK-OYT0caJ_w2XAnib) or [Baidu Yun](https://pan.baidu.com/s/1MGctWmNla_vZxDbEp2Dtzw?pwd=z5cn). Unzip and place them in `./pretrained_weights`.
@@ -162,7 +180,8 @@ python inference.py -h
 #### Fast hands-on (animals) 🐱🐶
 Animals mode is ONLY tested on Linux and Windows with NVIDIA GPU.
 
-You need to build an OP named `MultiScaleDeformableAttention` first, which is used by [X-Pose](https://github.com/IDEA-Research/X-Pose), a general keypoint detection framework.
+You need to build an OP named `MultiScaleDeformableAttention` first (refer to the <a href="#for-linux--or-windows--users">Check your CUDA versions</a> if needed), which is used by [X-Pose](https://github.com/IDEA-Research/X-Pose), a general keypoint detection framework.
+
 ```bash
 cd src/utils/dependencies/XPose/models/UniPose/ops
 python setup.py build install
@@ -226,7 +245,7 @@ python app.py --flag_do_torch_compile
 ```
 **Note**: This method is not supported on Windows and macOS.
 
-**Or, try it out effortlessly on [HuggingFace](https://huggingface.co/spaces/KwaiVGI/LivePortrait) 🤗**
+**Or, try it out effortlessly on [HuggingFace](https://huggingface.co/spaces/KlingTeam/LivePortrait) 🤗**
 
 ### 5. Inference speed evaluation 🚀🚀🚀
 We have also provided a script to evaluate the inference speed of each module:
@@ -245,9 +264,11 @@ Discover the invaluable resources contributed by our community to enhance your L
 
 ### Community-developed Projects
 
-| Repo (sorted by created timestamp) | Description | Author |
+| Repo | Description | Author / Links |
 |------|------|--------|
-| [**AdvancedLivePortrait-WebUI**](https://github.com/jhj0517/AdvancedLivePortrait-WebUI) | Dedicated gradio based WebUI started from [ComfyUI-AdvancedLivePortrait](https://github.com/PowerHouseMan/ComfyUI-AdvancedLivePortrait) | [@jhj0517](https://github.com/jhj0517) | 
+| [**ditto-talkinghead**](https://github.com/antgroup/ditto-talkinghead) | Real-time audio-driven talking head. | [ArXiv](https://arxiv.org/abs/2411.19509), [Homepage](https://digital-avatar.github.io/ai/Ditto/)  |
+| [**FasterLivePortrait**](https://github.com/warmshao/FasterLivePortrait) | Faster real-time version using TensorRT. | [@warmshao](https://github.com/warmshao) |
+| [**AdvancedLivePortrait-WebUI**](https://github.com/jhj0517/AdvancedLivePortrait-WebUI) | Dedicated gradio based WebUI started from [ComfyUI-AdvancedLivePortrait](https://github.com/PowerHouseMan/ComfyUI-AdvancedLivePortrait). | [@jhj0517](https://github.com/jhj0517) |
 | [**FacePoke**](https://github.com/jbilcke-hf/FacePoke) | A real-time head transformation app, controlled by your mouse! | [@jbilcke-hf](https://github.com/jbilcke-hf) |
 | [**FaceFusion**](https://github.com/facefusion/facefusion) | FaceFusion 3.0 integregates LivePortrait as `expression_restorer` and `face_editor` processors. | [@henryruhs](https://github.com/henryruhs) |
 | [**sd-webui-live-portrait**](https://github.com/dimitribarbot/sd-webui-live-portrait) | WebUI extension of LivePortrait, adding atab to the original Stable Diffusion WebUI to benefit from LivePortrait features. | [@dimitribarbot](https://github.com/dimitribarbot) |
@@ -283,7 +304,7 @@ We would like to thank the contributors of [FOMM](https://github.com/AliaksandrS
 Portrait animation technologies come with social risks, particularly the potential for misuse in creating deepfakes. To mitigate these risks, it’s crucial to follow ethical guidelines and adopt responsible usage practices. At present, the synthesized results contain visual artifacts that may help in detecting deepfakes. Please note that we do not assume any legal responsibility for the use of the results generated by this project.
 
 ## Citation 💖
-If you find LivePortrait useful for your research, welcome to 🌟 this repo and cite our work using the following BibTeX:
+If you find LivePortrait useful for your project or research, welcome to 🌟 this repo and cite our work using the following BibTeX:
 ```bibtex
 @article{guo2024liveportrait,
   title   = {LivePortrait: Efficient Portrait Animation with Stitching and Retargeting Control},
@@ -293,5 +314,21 @@ If you find LivePortrait useful for your research, welcome to 🌟 this repo and
 }
 ```
 
+*Long live in arXiv.*
+
 ## Contact 📧
 [**Jianzhu Guo (郭建珠)**](https://guojianzhu.com); **guojianzhu1994@gmail.com**
+
+## Star History 🌟
+<details>
+  <summary>Click to view Star chart</summary>
+  <p align="center">
+    <a href="https://www.star-history.com/#KlingTeam/LivePortrait&Timeline" target="_blank">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=KlingTeam/LivePortrait&type=Timeline&theme=dark" />
+        <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=KlingTeam/LivePortrait&type=Timeline" />
+        <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=KlingTeam/LivePortrait&type=Timeline" width="90%" />
+      </picture>
+    </a>
+  </p>
+</details>

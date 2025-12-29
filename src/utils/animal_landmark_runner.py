@@ -43,7 +43,7 @@ class XPoseRunner(object):
         args = Config.fromfile(model_config_path)
         args.device = device
         model = build_model(args)
-        checkpoint = torch.load(model_checkpoint_path, map_location=lambda storage, loc: storage)
+        checkpoint = torch.load(model_checkpoint_path, map_location=lambda storage, loc: storage, weights_only=False)
         load_res = model.load_state_dict(clean_state_dict(checkpoint["model"]), strict=False)
         model.eval()
         return model
@@ -60,7 +60,7 @@ class XPoseRunner(object):
 
     def get_unipose_output(self, image, instance_text_prompt, keypoint_text_prompt, box_threshold, IoU_threshold):
         instance_list = instance_text_prompt.split(',')
-        
+
         if len(keypoint_text_prompt) == 9:
             # torch.Size([1, 512]) torch.Size([9, 512])
             ins_text_embeddings, kpt_text_embeddings = self.ins_text_embeddings_9, self.kpt_text_embeddings_9
