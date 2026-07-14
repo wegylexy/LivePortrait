@@ -64,6 +64,68 @@ def read_video_chunks(video_path, chunk_size=128, max_dim=1280, division=2):
             break
         yield chunk
 
+
+class CustomVideoWriterNV(ffmpegcv.ffmpeg_writer.FFmpegWriterNV):
+    def _init_video_stream(self):
+        # Default average bitrate to 1M if not specified
+        bitrate_str = f"-b:v {self.bitrate} " if self.bitrate else "-b:v 1M "
+        rtsp_str = f"-f rtsp" if self.filename.startswith("rtsp://") else ""
+        filter_str = (
+            ""
+            if self.resize == self.size
+            else f"-vf scale={self.resize[0]}:{self.resize[1]}"
+        )
+        # Detailed NVENC parameters for animated portrait on green screen:
+        # - -rc vbr -cq 28: Use Variable Bitrate with Constant Quality target of 28.
+        #   A CQ of 28 offers a great sweet spot for clean talking-head/portrait visuals at a low size.
+        #   Since green screen backgrounds are flat/monochrome, they compress extremely well.
+        # - -b:v 1M -maxrate 1.5M -bufsize 2M: Target average 1Mbps, capping spikes at 1.5Mbps 
+        #   with a 2MB buffer. This is ideal for small facial expressions and lipsync.
+        # - -spatial-aq 1: Spatial Adaptive Quantization adjusts QP within a frame, shifting bits
+        #   away from flat areas (like the green screen) to high-detail areas (eyes, mouth).
+        # - -temporal-aq 1: Temporal Adaptive Quantization adjusts QP across frames based on motion,
+        #   maintaining high fidelity for talking head animations over time.
+        # - -movflags +faststart: Moves the MOOV atom to the beginning of the file so the video
+        #   can start playing immediately before it is fully downloaded (great for web streaming).
+        self.ffmpeg_cmd = (
+            f"ffmpeg -y -loglevel error "
+            f"-f rawvideo -pix_fmt {self.pix_fmt} -s {self.width}x{self.height} -r {self.fps} -i pipe: "
+            f"-preset {self.preset} -rc vbr -cq 28 {bitrate_str}-maxrate 1.5M -bufsize 2M "
+            f"-spatial-aq 1 -temporal-aq 1 "
+            f"-r {self.fps} -gpu {self.gpu} -c:v {self.codec} "
+            f"{filter_str} {rtsp_str} "
+            f'-pix_fmt yuv420p -movflags +faststart "{self.filename}"'
+        )
+        from ffmpegcv.ffmpeg_writer import run_async
+        self.process = run_async(self.ffmpeg_cmd)
+
+
+def create_custom_video_writer_nv(filename, codec='h264', fps=30, pix_fmt='bgr24', gpu=0, bitrate=None, resize=None, preset=None):
+    from ffmpegcv.ffmpeg_writer import get_num_NVIDIA_GPUs, IN_COLAB
+    numGPU = get_num_NVIDIA_GPUs()
+    assert numGPU
+    gpu = int(gpu) % numGPU if gpu is not None else 0
+    if codec is None:
+        codec = "h264_nvenc"
+    elif not isinstance(codec, str):
+        codec = "h264_nvenc"
+    elif codec.endswith("_nvenc"):
+        codec = codec
+    else:
+        codec = codec + "_nvenc"
+    assert codec in ["hevc_nvenc", "h264_nvenc"], "codec should be `hevc_nvenc` or `h264_nvenc`"
+    assert resize is None or len(resize) == 2
+
+    vid = CustomVideoWriterNV()
+    vid.fps = fps
+    vid.codec, vid.pix_fmt, vid.filename = codec, pix_fmt, filename
+    vid.gpu = gpu
+    vid.bitrate = bitrate
+    vid.resize = resize
+    vid.preset = preset if preset is not None else ("default" if IN_COLAB else "p2")
+    return vid
+
+
 class LivePortraitPipeline(object):
 
     def __init__(self, inference_cfg: InferenceConfig, crop_cfg: CropConfig):
@@ -345,8 +407,8 @@ class LivePortraitPipeline(object):
         ######## animate ########
         if flag_is_driving_video or (flag_is_source_video and not flag_is_driving_video):
             log(f"The animated video consists of {n_frames} frames.")
-            # Setup VideoWriterNV
-            writer = ffmpegcv.VideoWriterNV(wfp, codec='h264', fps=output_fps)
+            # Setup CustomVideoWriterNV targeting 1Mbps, using CQ VBR with spatial/temporal AQ and faststart
+            writer = create_custom_video_writer_nv(wfp, codec='h264', fps=output_fps)
         else:
             log(f"The output of image-driven portrait animation is an image.")
 
