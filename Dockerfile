@@ -1,7 +1,7 @@
 FROM pytorch/pytorch:2.9.1-cuda12.8-cudnn9-runtime AS base
-# Install ffmpeg
+# Install ffmpeg and build tools for compiling C-extensions (like stringzilla)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get install -y --no-install-recommends ffmpeg build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
