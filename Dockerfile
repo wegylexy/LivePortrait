@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.13.0-cuda13.2-cudnn9-runtime AS base
+FROM pytorch/pytorch:2.9.1-cuda12.8-cudnn9-runtime AS base
 # Install ffmpeg and build tools for compiling C-extensions (like stringzilla)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg build-essential && \
@@ -8,7 +8,7 @@ RUN apt-get update && \
 FROM base AS build
 # Install dependencies
 COPY requirements_base.txt requirements.txt ./
-RUN pip install --break-system-packages -r requirements.txt
+RUN pip install -r requirements.txt
 COPY src src
 COPY inference.py .
 # Download pretrained weights
