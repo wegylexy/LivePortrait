@@ -8,7 +8,7 @@ RUN apt-get update && \
 FROM base AS build
 # Install dependencies
 COPY requirements_base.txt requirements.txt ./
-RUN pip install -r requirements.txt
+RUN pip install --break-system-packages -r requirements.txt
 COPY src src
 COPY inference.py .
 # Download pretrained weights
